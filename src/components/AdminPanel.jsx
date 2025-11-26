@@ -10,7 +10,7 @@ const AdminPanel = () => {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ message: "", type: "info", open: false });
   const [confirmDialog, setConfirmDialog] = useState({ open: false, student: null, slotId: null });
-  const [suspendDialog, setSuspendDialog] = useState({ open: false, slot: null, action: null }); // NEW: Suspend confirmation
+  const [suspendDialog, setSuspendDialog] = useState({ open: false, slot: null, action: null });
 
   const failuresRef = useRef(0);
   const intervalRef = useRef(null);
@@ -94,12 +94,12 @@ const AdminPanel = () => {
     return `${startH}${startSuffix}-${endH}${endSuffix}`;
   };
 
-  // NEW: Open suspend confirmation dialog
+  // Open suspend confirmation dialog
   const openSuspendDialog = (slot, action) => {
     setSuspendDialog({ open: true, slot, action });
   };
 
-  // NEW: Handle suspend/unsuspend after confirmation
+  // Handle suspend/unsuspend after confirmation
   const handleSuspendConfirmed = async () => {
     const { slot, action } = suspendDialog;
     setSuspendDialog({ open: false, slot: null, action: null });
@@ -131,10 +131,26 @@ const AdminPanel = () => {
   };
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6 text-indigo-900">Admin Dashboard</h2>
+    <div className="admin-panel">
+      <h2 className="text-2xl font-bold mb-6 text-indigo-900 px-4 sm:px-0">Admin Dashboard</h2>
 
-      <div className="availability-grid">
+      {/* Mobile Stats Bar */}
+      <div className="bg-indigo-50 p-4 rounded-lg mb-6 mx-4 sm:mx-0 sm:hidden">
+        <div className="grid grid-cols-2 gap-4 text-center">
+          <div>
+            <div className="text-2xl font-bold text-indigo-700">{slots.length}</div>
+            <div className="text-sm text-indigo-600">Total Slots</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-indigo-700">
+              {slots.filter(s => s.suspended).length}
+            </div>
+            <div className="text-sm text-indigo-600">Suspended</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="availability-grid mobile-grid">
         {[...slots].sort((a,b)=>parseInt(a.hour,10)-parseInt(b.hour,10)).map(slot => {
           const students = Array.isArray(slot.students) ? slot.students : [];
           const booked = students.length;
@@ -142,49 +158,95 @@ const AdminPanel = () => {
           const available = Math.max(0, capacity - booked);
 
           return (
-            <div key={slot.id} className={`time-slot p-4 rounded mb-3 ${slot.suspended ? 'opacity-50 bg-gray-100' : 'bg-white'}`}>
-              <div className="flex justify-between items-center mb-2">
-                <span>{formatRange(slot.hour)}</span>
-                <span>{available} left</span>
+            <div 
+              key={slot.id} 
+              className={`time-slot p-4 rounded-lg mb-4 border-2 ${
+                slot.suspended 
+                  ? 'bg-gray-100 border-gray-300 opacity-60' 
+                  : 'bg-white border-gray-200 shadow-sm'
+              }`}
+            >
+              {/* Header Section */}
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1">
+                  <div className="text-lg font-semibold text-gray-900">{formatRange(slot.hour)}</div>
+                  <div className={`text-sm font-medium ${
+                    available === 0 ? 'text-red-600' : 
+                    slot.suspended ? 'text-gray-500' : 'text-green-600'
+                  }`}>
+                    {slot.suspended ? 'Suspended' : `${available} of ${capacity} available`}
+                  </div>
+                </div>
+                {slot.suspended && (
+                  <div className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded">
+                    🔒 Suspended
+                  </div>
+                )}
               </div>
 
-              <ul className="mb-2">
-                {students.length > 0 ? students.map((s,i)=>(
-                  <li key={i} className="flex justify-between text-sm p-1 bg-gray-50 rounded mb-1">
-                    <span>{s}</span>
-                    <button
-                      onClick={()=>setConfirmDialog({ open:true, student:s, slotId:slot.id })}
-                      className="text-red-600"
-                    >×</button>
-                  </li>
-                )) : <li className="text-gray-400 italic">No bookings</li>}
-              </ul>
+              {/* Students List */}
+              <div className="mb-4">
+                <div className="text-sm font-medium text-gray-700 mb-2">Students:</div>
+                {students.length > 0 ? (
+                  <div className="space-y-2">
+                    {students.map((student, index) => (
+                      <div key={index} className="flex justify-between items-center bg-gray-50 rounded-lg p-3">
+                        <span className="text-sm text-gray-800 truncate flex-1 mr-2">{student}</span>
+                        <button
+                          onClick={() => setConfirmDialog({ open: true, student, slotId: slot.id })}
+                          className="text-red-600 hover:text-red-800 font-bold text-lg w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 transition-colors"
+                          title="Remove student"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-400 italic text-sm bg-gray-50 rounded-lg p-3 text-center">
+                    No bookings
+                  </div>
+                )}
+              </div>
 
-              <div className="flex gap-2 mt-2">
-                {/* Suspend / Unsuspend Button */}
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                {/* Suspend/Unsuspend Button */}
                 {slot.suspended ? (
                   <button
-                    onClick={()=>openSuspendDialog(slot, 'unsuspend')} // Updated to use dialog
-                    className="btn px-2 py-1 text-sm bg-yellow-200 text-yellow-800">
-                    🔓 Unsuspend
+                    onClick={() => openSuspendDialog(slot, 'unsuspend')}
+                    className="btn bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-300 py-3 sm:py-2 text-sm font-medium flex items-center justify-center gap-2"
+                  >
+                    <span>🔓</span>
+                    <span>Unsuspend</span>
                   </button>
                 ) : (
                   <button
-                    onClick={()=>openSuspendDialog(slot, 'suspend')} // Updated to use dialog
+                    onClick={() => openSuspendDialog(slot, 'suspend')}
                     disabled={students.length > 0}
-                    className={`btn px-2 py-1 text-sm ${students.length > 0 ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-gray-200 text-gray-800'}`}
-                    title={students.length > 0 ? "Cannot suspend slot with students" : "Suspend slot"}>
-                    🔒 Suspend
+                    className={`btn py-3 sm:py-2 text-sm font-medium flex items-center justify-center gap-2 ${
+                      students.length > 0 
+                        ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed' 
+                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300 border-gray-300'
+                    }`}
+                    title={students.length > 0 ? "Cannot suspend slot with students" : "Suspend slot"}
+                  >
+                    <span>🔒</span>
+                    <span>Suspend</span>
                   </button>
                 )}
 
                 {/* Add Booking Button */}
                 {!slot.suspended && (
                   <button
-                    onClick={()=>openModal(slot.id)}
+                    onClick={() => openModal(slot.id)}
                     disabled={available === 0}
-                    className={`btn btn-primary text-sm py-1 px-3 flex-1 ${available===0 ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                    + Add
+                    className={`btn btn-primary py-3 sm:py-2 text-sm font-medium flex items-center justify-center gap-2 ${
+                      available === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <span>+</span>
+                    <span>Add Booking</span>
                   </button>
                 )}
               </div>
@@ -193,104 +255,136 @@ const AdminPanel = () => {
         })}
       </div>
 
-      {/* Booking Modal */}
+      {/* Booking Modal - Mobile Optimized */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold mb-4 text-gray-800">Manual Booking</h3>
-            <input
-              type="text"
-              value={studentName}
-              onChange={e=>setStudentName(e.target.value)}
-              placeholder="Enter name"
-              className="w-full p-2 border rounded mb-4"
-            />
-            <div className="flex justify-end gap-3">
-              <button onClick={()=>setModalOpen(false)} className="btn bg-gray-200 text-gray-700 hover:bg-gray-300">Cancel</button>
-              <button onClick={handleBooking} disabled={bookingLoading} className="btn btn-primary">
-                {bookingLoading ? "Booking..." : "Confirm Booking"}
-              </button>
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-xl font-bold mb-4 text-gray-800">Manual Booking</h3>
+              <input
+                type="text"
+                value={studentName}
+                onChange={e => setStudentName(e.target.value)}
+                placeholder="Enter student name"
+                className="w-full p-4 border border-gray-300 rounded-lg text-base mb-6 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                autoFocus
+              />
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button 
+                  onClick={() => setModalOpen(false)} 
+                  className="btn bg-gray-200 text-gray-700 hover:bg-gray-300 py-3 px-6 font-medium order-2 sm:order-1"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleBooking} 
+                  disabled={bookingLoading}
+                  className="btn btn-primary py-3 px-6 font-medium order-1 sm:order-2"
+                >
+                  {bookingLoading ? "Booking..." : "Confirm Booking"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* NEW: Suspend Confirmation Modal */}
+      {/* Suspend Confirmation Modal - Mobile Optimized */}
       {suspendDialog.open && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-gray-200">
-            <h3 className="text-xl font-bold mb-3 text-[#4B2E83]">
-              {suspendDialog.action === 'suspend' ? 'Suspend Slot' : 'Unsuspend Slot'}
-            </h3>
-            <p className="mb-6 text-gray-700">
-              Are you sure you want to {suspendDialog.action} the{" "}
-              <span className="font-semibold text-[#4B2E83]">
-                {formatRange(suspendDialog.slot?.hour)}
-              </span>{" "}
-              slot?
-              {suspendDialog.action === 'suspend' && (
-                <span className="block mt-2 text-sm text-amber-600">
-                  ⚠️ Students will not be able to book this slot until it's unsuspended.
-                </span>
-              )}
-              {suspendDialog.action === 'unsuspend' && (
-                <span className="block mt-2 text-sm text-green-600">
-                  ✅ Students will be able to book this slot again.
-                </span>
-              )}
-            </p>
-            <div className="flex justify-end gap-4">
-              <button 
-                className="px-4 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200"
-                onClick={() => setSuspendDialog({ open: false, slot: null, action: null })}
-              >
-                Cancel
-              </button>
-              <button 
-                className={`px-4 py-2 rounded text-white font-semibold shadow ${
-                  suspendDialog.action === 'suspend' 
-                    ? 'bg-red-600 hover:bg-red-700' 
-                    : 'bg-green-600 hover:bg-green-700'
-                }`}
-                onClick={handleSuspendConfirmed}
-              >
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-gray-200">
+            <div className="p-6">
+              <h3 className="text-xl font-bold mb-3 text-[#4B2E83]">
                 {suspendDialog.action === 'suspend' ? 'Suspend Slot' : 'Unsuspend Slot'}
-              </button>
+              </h3>
+              <p className="mb-6 text-gray-700 text-base">
+                Are you sure you want to {suspendDialog.action} the{" "}
+                <span className="font-semibold text-[#4B2E83]">
+                  {formatRange(suspendDialog.slot?.hour)}
+                </span>{" "}
+                slot?
+                {suspendDialog.action === 'suspend' && (
+                  <span className="block mt-3 text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
+                    ⚠️ Students will not be able to book this slot until it's unsuspended.
+                  </span>
+                )}
+                {suspendDialog.action === 'unsuspend' && (
+                  <span className="block mt-3 text-sm text-green-600 bg-green-50 p-3 rounded-lg">
+                    ✅ Students will be able to book this slot again.
+                  </span>
+                )}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button 
+                  className="px-6 py-3 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 order-2 sm:order-1"
+                  onClick={() => setSuspendDialog({ open: false, slot: null, action: null })}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className={`px-6 py-3 rounded-lg text-white font-semibold shadow ${
+                    suspendDialog.action === 'suspend' 
+                      ? 'bg-amber-600 hover:bg-amber-700' 
+                      : 'bg-green-600 hover:bg-green-700'
+                  } order-1 sm:order-2`}
+                  onClick={handleSuspendConfirmed}
+                >
+                  {suspendDialog.action === 'suspend' ? 'Suspend Slot' : 'Unsuspend Slot'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Confirm Remove Modal */}
+      {/* Confirm Remove Modal - Mobile Optimized */}
       {confirmDialog.open && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-gray-200">
-            <h3 className="text-xl font-bold mb-3 text-[#4B2E83]">Remove Student</h3>
-            <p className="mb-6 text-gray-700">
-              Are you sure you want to remove <span className="font-semibold text-[#4B2E83]">{confirmDialog.student}</span> from this slot? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-4">
-              <button className="px-4 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200"
-                onClick={()=>setConfirmDialog({ open:false, student:null, slotId:null })}>Cancel</button>
-              <button className="px-4 py-2 rounded bg-[#4B2E83] text-white font-semibold shadow hover:bg-[#3a2367]"
-                onClick={async ()=>{
-                  const { slotId, student } = confirmDialog;
-                  setConfirmDialog({ open:false, student:null, slotId:null });
-                  try {
-                    const dateStr = (new Date()).toISOString().split('T')[0];
-                    const resp = await api.deleteBooking(slotId, student, dateStr);
-                    if(resp?.success){ loadSlots(true); showSnackbar("Student removed!", "success"); }
-                    else showSnackbar(resp?.message || "Error removing student","error");
-                  } catch(e){ showSnackbar(e.message || "Error removing student","error"); }
-                }}>Remove Student</button>
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-gray-200">
+            <div className="p-6">
+              <h3 className="text-xl font-bold mb-3 text-[#4B2E83]">Remove Student</h3>
+              <p className="mb-6 text-gray-700 text-base">
+                Are you sure you want to remove{" "}
+                <span className="font-semibold text-[#4B2E83]">{confirmDialog.student}</span>{" "}
+                from this slot? This action cannot be undone.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button 
+                  className="px-6 py-3 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 order-2 sm:order-1"
+                  onClick={() => setConfirmDialog({ open: false, student: null, slotId: null })}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="px-6 py-3 rounded-lg bg-[#4B2E83] text-white font-semibold shadow hover:bg-[#3a2367] order-1 sm:order-2"
+                  onClick={async () => {
+                    const { slotId, student } = confirmDialog;
+                    setConfirmDialog({ open: false, student: null, slotId: null });
+                    try {
+                      const dateStr = (new Date()).toISOString().split('T')[0];
+                      const resp = await api.deleteBooking(slotId, student, dateStr);
+                      if (resp?.success) { 
+                        loadSlots(true); 
+                        showSnackbar("Student removed!", "success"); 
+                      } else {
+                        showSnackbar(resp?.message || "Error removing student", "error");
+                      }
+                    } catch (e) { 
+                      showSnackbar(e.message || "Error removing student", "error"); 
+                    }
+                  }}
+                >
+                  Remove Student
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Snackbar */}
+      {/* Snackbar - Mobile Optimized */}
       {snackbar.open && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded shadow text-white bg-[#4B2E83]">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:top-4 sm:bottom-auto z-50 px-6 py-4 rounded-lg shadow text-white bg-[#4B2E83] text-center">
           {snackbar.message}
         </div>
       )}
