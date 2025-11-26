@@ -45,12 +45,22 @@ const AvailabilityGrid = ({ availability = [], selectedSlot, onSlotSelect, curre
               key={slot.hour}
               onClick={() => !isDisabled && onSlotSelect && onSlotSelect(slot)}
               className={slotClass}
-              style={isSuspended ? { filter: 'blur(2px)', opacity: 0.5, cursor: 'not-allowed' } : {}}
             >
               <div className="slot-time">{formatRange(slot.hour)}</div>
               <div className="slot-status">
-                {isSuspended ? "🔒 Suspended" : slot.theory ? "Theory Class" : `${available} spots left`}
+                {isSuspended ? (
+                  <>
+                    <span className="suspended-icon">🔒</span> Suspended
+                  </>
+                ) : slot.theory ? (
+                  "Theory Class"
+                ) : (
+                  `${available} spots left`
+                )}
               </div>
+              {isSuspended && (
+                <div className="suspended-overlay">Suspended</div>
+              )}
             </div>
           );
         })}
