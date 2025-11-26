@@ -13,6 +13,12 @@ const StudentBooking = () => {
   const failuresRef = useRef(0);
   const intervalRef = useRef(null);
   const autoRefreshRef = useRef(null);
+  const slotsRef = useRef([]); // Add this ref to track slots without re-renders
+
+  // Sync ref with state
+  useEffect(() => {
+    slotsRef.current = slots;
+  }, [slots]);
 
   const formatRange = (hourStr) => {
     if (!hourStr) return "";
@@ -44,9 +50,9 @@ const StudentBooking = () => {
     try {
       const data = await api.getSlots();
       
-      // Preserve suspended state during auto-refresh (like AdminPanel does)
+      // Use the ref instead of state to avoid dependency issues
       const updatedSlots = data.map(newSlot => {
-        const existingSlot = slots.find(s => s.id === newSlot.id);
+        const existingSlot = slotsRef.current.find(s => s.id === newSlot.id);
         return preserveSuspended && existingSlot
           ? { ...newSlot, suspended: existingSlot.suspended }
           : newSlot;
@@ -75,17 +81,17 @@ const StudentBooking = () => {
     } finally {
       setLoading(false);
     }
-  }, [showMessage, clearAllIntervals, slots]); // Added slots to dependencies
+  }, [showMessage, clearAllIntervals]); // REMOVED: slots from dependencies
 
   useEffect(() => {
     loadSlots();
-    intervalRef.current = setInterval(() => loadSlots(true), 10000); // Pass true to preserve suspended state
+    intervalRef.current = setInterval(() => loadSlots(true), 10000);
     return () => clearAllIntervals();
   }, [loadSlots, clearAllIntervals]);
 
   const handleSlotSelect = (slot) => {
     if (autoRefreshRef.current) return;
-    if (slot.suspended) return; // Prevent selecting suspended slot
+    if (slot.suspended) return;
     setSelectedSlot(slot);
   };
 
@@ -106,7 +112,7 @@ const StudentBooking = () => {
         showMessage(`🎉 Booking confirmed for ${currentStudentName.trim()} at ${formatRange(slot.hour)}`, 'success');
         setSelectedSlot(null);
         setCurrentStudentName("");
-        loadSlots(true); // Preserve suspended state after booking
+        loadSlots(true);
       } else {
         showMessage(result?.message || 'Booking failed', 'error');
       }
@@ -133,18 +139,19 @@ const StudentBooking = () => {
       <h2 className="text-2xl font-bold mb-6 text-indigo-900">Book Your Session</h2>
 
       <div className="form-group">
-        <label>Your Name *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Your Name *</label>
         <input
           type="text"
           value={currentStudentName}
           onChange={(e) => setCurrentStudentName(e.target.value)}
           placeholder="Enter your full name"
           disabled={loading || autoRefreshRef.current}
+          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
         />
       </div>
 
       <div className="form-group">
-        <label>Select Time</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Select Time</label>
         <AvailabilityGrid
           availability={slots.map(s => ({ ...s, label: formatRange(s.hour) }))}
           selectedSlot={selectedSlot}
@@ -157,7 +164,7 @@ const StudentBooking = () => {
       <div className="mt-6">
         <button
           onClick={handleBookSlot}
-          className="btn btn-primary w-full"
+          className="w-full py-3 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold"
           disabled={!currentStudentName.trim() || !selectedSlot || loading || autoRefreshRef.current || selectedSlot?.suspended}
         >
           {loading ? 'Booking...' : 'Book Selected Slot'}

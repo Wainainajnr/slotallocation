@@ -157,7 +157,7 @@ const AdminPanel = () => {
     <div className="admin-panel">
       <h2 className="text-2xl font-bold mb-6 text-indigo-900 px-4 sm:px-0">Admin Dashboard</h2>
 
-      {/* Stats Dashboard */}
+      {/* Stats Dashboard - Already responsive for mobile */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 px-4 sm:px-0">
         {/* Total Slots */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
@@ -215,19 +215,7 @@ const AdminPanel = () => {
         </div>
       </div>
 
-      {/* Mobile Stats Bar - Simplified for mobile */}
-      <div className="bg-indigo-50 p-4 rounded-lg mb-6 mx-4 sm:mx-0 lg:hidden">
-        <div className="grid grid-cols-2 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-indigo-700">{stats.totalBooked}</div>
-            <div className="text-sm text-indigo-600">Booked</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-indigo-700">{stats.totalAvailable}</div>
-            <div className="text-sm text-indigo-600">Available</div>
-          </div>
-        </div>
-      </div>
+      {/* Removed the duplicate mobile stats bar */}
 
       <div className="availability-grid mobile-grid">
         {[...slots].sort((a,b)=>parseInt(a.hour,10)-parseInt(b.hour,10)).map(slot => {
