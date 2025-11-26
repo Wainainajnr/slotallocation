@@ -15,6 +15,29 @@ const AdminPanel = () => {
   const failuresRef = useRef(0);
   const intervalRef = useRef(null);
 
+  // Calculate stats
+  const calculateStats = () => {
+    const totalSlots = slots.length;
+    const suspendedSlots = slots.filter(s => s.suspended).length;
+    
+    const totalCapacity = slots.reduce((sum, slot) => sum + (slot.capacity || 4), 0);
+    const totalBooked = slots.reduce((sum, slot) => sum + (Array.isArray(slot.students) ? slot.students.length : 0), 0);
+    const totalAvailable = totalCapacity - totalBooked;
+    
+    const activeSlots = totalSlots - suspendedSlots;
+    
+    return {
+      totalSlots,
+      suspendedSlots,
+      totalBooked,
+      totalAvailable,
+      activeSlots,
+      totalCapacity
+    };
+  };
+
+  const stats = calculateStats();
+
   // Load slots on mount and every 10 seconds
   useEffect(() => {
     loadSlots();
@@ -134,18 +157,74 @@ const AdminPanel = () => {
     <div className="admin-panel">
       <h2 className="text-2xl font-bold mb-6 text-indigo-900 px-4 sm:px-0">Admin Dashboard</h2>
 
-      {/* Mobile Stats Bar */}
-      <div className="bg-indigo-50 p-4 rounded-lg mb-6 mx-4 sm:mx-0 sm:hidden">
+      {/* Stats Dashboard */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 px-4 sm:px-0">
+        {/* Total Slots */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Slots</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalSlots}</p>
+            </div>
+            <div className="bg-blue-100 p-3 rounded-lg">
+              <span className="text-blue-600 text-lg">⏱️</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Booked Spots */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Booked</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalBooked}</p>
+              <p className="text-xs text-gray-500">of {stats.totalCapacity} total</p>
+            </div>
+            <div className="bg-green-100 p-3 rounded-lg">
+              <span className="text-green-600 text-lg">👥</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Available Spots */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Available</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalAvailable}</p>
+              <p className="text-xs text-gray-500">spots left</p>
+            </div>
+            <div className="bg-emerald-100 p-3 rounded-lg">
+              <span className="text-emerald-600 text-lg">✅</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Suspended Slots */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Suspended</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.suspendedSlots}</p>
+              <p className="text-xs text-gray-500">of {stats.totalSlots} total</p>
+            </div>
+            <div className="bg-red-100 p-3 rounded-lg">
+              <span className="text-red-600 text-lg">🔒</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Stats Bar - Simplified for mobile */}
+      <div className="bg-indigo-50 p-4 rounded-lg mb-6 mx-4 sm:mx-0 lg:hidden">
         <div className="grid grid-cols-2 gap-4 text-center">
           <div>
-            <div className="text-2xl font-bold text-indigo-700">{slots.length}</div>
-            <div className="text-sm text-indigo-600">Total Slots</div>
+            <div className="text-2xl font-bold text-indigo-700">{stats.totalBooked}</div>
+            <div className="text-sm text-indigo-600">Booked</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-indigo-700">
-              {slots.filter(s => s.suspended).length}
-            </div>
-            <div className="text-sm text-indigo-600">Suspended</div>
+            <div className="text-2xl font-bold text-indigo-700">{stats.totalAvailable}</div>
+            <div className="text-sm text-indigo-600">Available</div>
           </div>
         </div>
       </div>
@@ -255,7 +334,8 @@ const AdminPanel = () => {
         })}
       </div>
 
-      {/* Booking Modal - Mobile Optimized */}
+      {/* Rest of the modals remain the same */}
+      {/* Booking Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -289,7 +369,7 @@ const AdminPanel = () => {
         </div>
       )}
 
-      {/* Suspend Confirmation Modal - Mobile Optimized */}
+      {/* Suspend Confirmation Modal */}
       {suspendDialog.open && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-gray-200">
@@ -337,7 +417,7 @@ const AdminPanel = () => {
         </div>
       )}
 
-      {/* Confirm Remove Modal - Mobile Optimized */}
+      {/* Confirm Remove Modal */}
       {confirmDialog.open && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-gray-200">
@@ -382,7 +462,7 @@ const AdminPanel = () => {
         </div>
       )}
 
-      {/* Snackbar - Mobile Optimized */}
+      {/* Snackbar */}
       {snackbar.open && (
         <div className="fixed bottom-4 left-4 right-4 sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:top-4 sm:bottom-auto z-50 px-6 py-4 rounded-lg shadow text-white bg-[#4B2E83] text-center">
           {snackbar.message}

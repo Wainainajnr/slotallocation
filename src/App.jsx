@@ -105,7 +105,6 @@ function App() {
                 <h4 className="font-bold text-lg mb-3 text-indigo-900">Session Hours</h4>
                 <ul className="space-y-2 text-gray-600">
                   <li>Practical: 7:00 AM - 5:00 PM</li>
-                  <li>Theory: 12:00 PM - 1:00 PM</li>
                   <li>Max 4 students per hour</li>
                 </ul>
               </div>
