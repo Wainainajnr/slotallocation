@@ -1,0 +1,150 @@
+/* Tailwind Directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  /* friendlier background gradient (teal → light blue) */
+  background: linear-gradient(135deg, #00C9A7 0%, #60A5FA 100%);
+  min-height: 100vh;
+}
+
+/* Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header */
+.app-header {
+  @apply bg-gray-800 text-white p-8 text-center rounded-t-xl;
+  margin-bottom: 0;
+}
+
+.app-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.app-header p {
+  @apply opacity-80 text-lg;
+}
+
+/* Main Content */
+.main-content {
+  @apply grid grid-cols-2 gap-0 bg-white rounded-b-xl shadow-xl overflow-hidden;
+}
+
+/* Student Section */
+.student-section {
+  @apply p-8 bg-gray-100 border-r border-gray-300 flex flex-col gap-2;
+}
+
+/* Form */
+.form-group {
+  @apply mb-5;
+}
+
+label {
+  @apply block mb-2 font-semibold text-gray-700;
+}
+
+input, select {
+  @apply w-full p-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-indigo-500;
+}
+
+/* Buttons */
+.btn {
+  @apply px-5 py-3 rounded-lg font-semibold cursor-pointer transition-all mb-2;
+}
+
+.btn-primary {
+  @apply bg-indigo-600 text-white hover:bg-indigo-500;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-500;
+}
+
+.btn-success {
+  @apply bg-green-600 text-white hover:bg-green-500;
+}
+
+/* Results Section */
+.results-section {
+  @apply col-span-2 p-8 bg-gray-200 border-t border-gray-300;
+}
+
+/* Availability Grid */
+.availability-grid {
+  @apply grid grid-cols-2 md:grid-cols-3 gap-4 my-5;
+}
+
+.time-slot {
+  @apply p-4 rounded-lg text-center border cursor-pointer transition-all bg-white;
+}
+
+.time-slot.available {
+  @apply border-green-500 bg-green-50;
+}
+
+.time-slot.available:hover {
+  @apply bg-green-100;
+}
+
+.time-slot.full {
+  @apply border-red-500 bg-red-100 cursor-not-allowed;
+}
+
+.time-slot.theory {
+  @apply border-yellow-500 bg-yellow-100 cursor-not-allowed;
+}
+
+.time-slot.selected {
+  @apply border-indigo-500 bg-indigo-50 shadow-md;
+}
+
+.slot-time {
+  @apply font-bold mb-1;
+}
+
+.slot-status {
+  @apply text-sm;
+}
+
+/* Booking Confirmations & Errors */
+.booking-confirmation {
+  @apply mt-4 p-4 bg-green-100 text-green-800 rounded;
+}
+
+.error-message {
+  @apply mt-4 p-4 bg-red-100 text-red-800 rounded;
+}
+
+.loading {
+  @apply text-center p-5 text-indigo-600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-content {
+    @apply grid-cols-1;
+  }
+  
+  .student-section {
+    @apply border-r-0 border-b border-gray-300;
+  }
+  
+  .app-header h1 {
+    font-size: 2rem;
+  }
+}
