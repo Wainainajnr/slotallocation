@@ -30,7 +30,7 @@ class DrivingSchoolAPI {
         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`;
       });
-      
+
       localStorage.clear();
       sessionStorage.clear();
       console.log('[API] Auth data cleared due to 431 error');
@@ -45,7 +45,7 @@ class DrivingSchoolAPI {
     // Debug log the final URL used for fetch
     // eslint-disable-next-line no-console
     console.debug(`[API] request -> ${method} ${url} (base=${this.remoteBase})`);
-    
+
     const opts = {
       method,
       headers: {
@@ -89,7 +89,7 @@ class DrivingSchoolAPI {
     // Handle 431 specifically
     if (res.status === 431) {
       this.clearAuthData();
-      
+
       const err = new Error('HTTP 431 - Request Header Fields Too Large');
       err.status = 431;
       err.isHeaderTooLarge = true;
@@ -98,7 +98,7 @@ class DrivingSchoolAPI {
 
     if (!res.ok) {
       let errBody = null;
-      try { 
+      try {
         const text = await res.text();
         try {
           errBody = JSON.parse(text);
@@ -108,7 +108,7 @@ class DrivingSchoolAPI {
       } catch (e) {
         // Ignore
       }
-      
+
       const err = new Error(
         errBody?.message || `HTTP ${res.status} - ${res.statusText}`
       );
@@ -128,16 +128,17 @@ class DrivingSchoolAPI {
 
   async getSlots(date = null) {
     const d = date || new Date().toISOString().split('T')[0];
-    
+
     try {
       const data = await this.request(`/admin/daily?date=${encodeURIComponent(d)}`);
-      
+
       const slotsArray = Array.isArray(data) ? data : (data.slots || []);
       return slotsArray.map(s => ({
         id: s.hour?.toString() ?? `${s.id}`,
         hour: s.hour,
         capacity: s.capacity || 4,
-        students: Array.isArray(s.students) ? s.students : []
+        students: Array.isArray(s.students) ? s.students : [],
+        suspended: !!s.suspended
       }));
     } catch (error) {
       console.error('[API] getSlots error:', error);
@@ -148,14 +149,14 @@ class DrivingSchoolAPI {
   async bookSlot(slotId, studentName, date = null) {
     const d = date || new Date().toISOString().split('T')[0];
     const hour = String(slotId).padStart(2, '0');
-    
+
     try {
       return await this.request('/admin/book', {
         method: 'POST',
-        body: { 
-          date: d, 
-          hour, 
-          student_name: studentName 
+        body: {
+          date: d,
+          hour,
+          student_name: studentName
         }
       });
     } catch (error) {
@@ -178,6 +179,24 @@ class DrivingSchoolAPI {
       });
     } catch (err) {
       console.error('[API] deleteBooking error:', err);
+      throw err;
+    }
+  }
+
+  async suspendSlot(slotId, action, date = null) {
+    const d = date || new Date().toISOString().split('T')[0];
+    const hour = String(slotId).padStart(2, '0');
+    try {
+      return await this.request('/admin/suspend', {
+        method: 'POST',
+        body: {
+          date: d,
+          hour,
+          action // 'suspend' or 'unsuspend'
+        }
+      });
+    } catch (err) {
+      console.error('[API] suspendSlot error:', err);
       throw err;
     }
   }

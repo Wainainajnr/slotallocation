@@ -46,7 +46,7 @@ const StudentBooking = () => {
   const loadSlots = useCallback(async () => {
     // Don't start new requests if we're already in a 431 recovery state
     if (autoRefreshRef.current) return;
-    
+
     setLoading(true);
     try {
       const data = await api.getSlots();
@@ -55,19 +55,19 @@ const StudentBooking = () => {
     } catch (err) {
       console.error('[StudentBooking] loadSlots error', err);
       failuresRef.current = (failuresRef.current || 0) + 1;
-      
+
       if (err?.status === 431 || err?.isHeaderTooLarge) {
         showMessage('Session issue detected. Auto-refreshing page in 3 seconds...', 'error');
-        
+
         // Stop all polling immediately
         clearAllIntervals();
-        
+
         // Auto-refresh after delay
         autoRefreshRef.current = setTimeout(() => {
           console.log('Auto-refreshing page due to 431 error');
           window.location.reload();
         }, 3000);
-        
+
       } else if (err?.isNetworkError || err?.status === 0) {
         const hostHint = api.remoteBase || 'http://localhost:3001';
         showMessage(
@@ -77,7 +77,7 @@ const StudentBooking = () => {
       } else {
         showMessage('Error loading available slots', 'error');
       }
-      
+
       // Stop polling after 3 failures of any type
       if (failuresRef.current >= 3 && intervalRef.current) {
         clearAllIntervals();
@@ -90,7 +90,7 @@ const StudentBooking = () => {
 
   useEffect(() => {
     loadSlots();
-    
+
     intervalRef.current = setInterval(() => {
       if (failuresRef.current >= 3 || autoRefreshRef.current) {
         if (intervalRef.current) {
@@ -101,7 +101,7 @@ const StudentBooking = () => {
       }
       loadSlots();
     }, 10000);
-    
+
     return () => {
       clearAllIntervals();
     };
@@ -136,7 +136,7 @@ const StudentBooking = () => {
     }
 
     const name = currentStudentName.trim();
-    
+
     // Validation checks
     if ((slot.students || []).includes(name)) {
       showMessage('You already have this slot booked.', 'info');
@@ -163,13 +163,13 @@ const StudentBooking = () => {
       console.error('[StudentBooking] book error', err);
       if (err?.status === 431 || err?.isHeaderTooLarge) {
         showMessage('Session issue detected. Page will refresh automatically...', 'error');
-        
+
         // Stop all polling and schedule refresh
         clearAllIntervals();
         autoRefreshRef.current = setTimeout(() => {
           window.location.reload();
         }, 3000);
-        
+
       } else if (err?.isNetworkError || err?.status === 0) {
         const hostHint = api.remoteBase || 'http://localhost:3001';
         showMessage(
@@ -187,78 +187,71 @@ const StudentBooking = () => {
   // Show a different state when we're in 431 recovery mode
   if (autoRefreshRef.current) {
     return (
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full sm:max-w-xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
-          BOOK YOUR DRIVING SESSION
+      <div className="student-section">
+        {message && (
+          <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded shadow ${
+            messageType === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : messageType === 'error' ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-yellow-50 text-yellow-800 border border-yellow-200'
+          }`}>
+            {message}
+          </div>
+        )}
+        <h2 className="text-2xl font-bold mb-4 text-indigo-900">
+          Resetting Session...
         </h2>
-        
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-700 mb-2">Resetting session...</p>
-          <p className="text-sm text-gray-500">Page will refresh automatically to fix session issues</p>
+          <p className="text-lg text-gray-700 mb-2">Please wait...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-lg w-full sm:max-w-xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto">
-      <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
-        BOOK YOUR DRIVING SESSION
+    <div className="student-section">
+      {message && (
+        <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded shadow ${
+          messageType === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : messageType === 'error' ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-yellow-50 text-yellow-800 border border-yellow-200'
+        }`}>
+          {message}
+        </div>
+      )}
+      <h2 className="text-2xl font-bold mb-6 text-indigo-900">
+        Book Your Session
       </h2>
 
-      <div className="grid gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Your Name *
-          </label>
-          <input
-            type="text"
-            value={currentStudentName}
-            onChange={(e) => setCurrentStudentName(e.target.value)}
-            placeholder="Enter your full name"
-            className="w-full border-2 border-indigo-100 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            disabled={loading || autoRefreshRef.current}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-4">
-            Select Time
-          </label>
-          <AvailabilityGrid
-            availability={slots.map(s => ({ ...s, label: formatRange(s.hour) }))}
-            selectedSlot={selectedSlot}
-            onSlotSelect={handleSlotSelect}
-            currentStudentName={currentStudentName.trim()}
-            disabled={loading || autoRefreshRef.current}
-          />
-        </div>
-
-        <div className="mt-6">
-          <button
-            onClick={handleBookSlot}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg shadow-md disabled:opacity-50 transition-colors duration-200"
-            disabled={!currentStudentName.trim() || !selectedSlot || loading || autoRefreshRef.current}
-          >
-            {loading ? 'Booking...' : 'Book Selected Slot'}
-          </button>
-        </div>
-
-        {message && (
-          <div
-            className={`p-4 mt-2 rounded-lg border ${
-              messageType === 'success'
-                ? 'bg-green-50 text-green-800 border-green-200'
-                : messageType === 'error'
-                ? 'bg-red-50 text-red-800 border-red-200'
-                : 'bg-yellow-50 text-yellow-800 border-yellow-200'
-            }`}
-          >
-            {message}
-          </div>
-        )}
+      <div className="form-group">
+        <label>Your Name *</label>
+        <input
+          type="text"
+          value={currentStudentName}
+          onChange={(e) => setCurrentStudentName(e.target.value)}
+          placeholder="Enter your full name"
+          disabled={loading || autoRefreshRef.current}
+        />
       </div>
+
+      <div className="form-group">
+        <label>Select Time</label>
+        <AvailabilityGrid
+          availability={slots.map(s => ({ ...s, label: formatRange(s.hour) }))}
+          selectedSlot={selectedSlot}
+          onSlotSelect={handleSlotSelect}
+          currentStudentName={currentStudentName.trim()}
+          disabled={loading || autoRefreshRef.current}
+        />
+      </div>
+
+      <div className="mt-6">
+        <button
+          onClick={handleBookSlot}
+          className="btn btn-primary w-full"
+          disabled={!currentStudentName.trim() || !selectedSlot || loading || autoRefreshRef.current}
+        >
+          {loading ? 'Booking...' : 'Book Selected Slot'}
+        </button>
+      </div>
+
+      {/* snackbar moved to fixed top position */}
     </div>
   );
 };
